@@ -5,10 +5,11 @@ services:
     plan: free
     healthCheckPath: /actuator/health/readiness
     envVars:
+      # Render's fromDatabase only exposes a native postgres:// URL, but the pgjdbc driver
+      # requires a jdbc: URL, so set it explicitly. Host + db name come from the wallet-db
+      # instance; update them if that database is ever recreated. Credentials stay auto-wired below.
       - key: SPRING_DATASOURCE_URL
-        fromDatabase:
-          name: wallet-db
-          property: connectionString
+        value: jdbc:postgresql://dpg-dair13vqj5pc73b89plg-a:5432/wallet_b8ud
       - key: SPRING_DATASOURCE_USERNAME
         fromDatabase:
           name: wallet-db
