@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: wallet-service
+    runtime: docker
+    plan: free
+    healthCheckPath: /actuator/health/readiness
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: wallet-db
+          property: connectionString
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: wallet-db
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: wallet-db
+          property: password
+      - key: SPRING_DATASOURCE_DRIVER_CLASS_NAME
+        value: org.postgresql.Driver
+
+databases:
+  - name: wallet-db
+    databaseName: wallet
+    user: wallet
+    plan: free
