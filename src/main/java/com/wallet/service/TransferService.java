@@ -34,6 +34,18 @@ public class TransferService {
         if (from.equals(to)) throw new IllegalArgumentException("from and to wallets must differ");
         if (amount <= 0) throw new IllegalArgumentException("amount_paise must be positive");
 
+        // Lock both wallet rows FIRST, in deterministic ascending-UUID order. This must happen
+        // before the transfer INSERT: because transfers.from_wallet_id/to_wallet_id are foreign
+        // keys, inserting the row takes FOR KEY SHARE locks on both wallet rows in (from, to)
+        // order — unsorted — which under an A->B / B->A cross inverts lock order and deadlocks.
+        // Acquiring FOR UPDATE in sorted order up front makes every transfer take the shared
+        // rows in the same order, so no lock cycle can form.
+        UUID first = from.compareTo(to) < 0 ? from : to;
+        UUID second = first.equals(from) ? to : from;
+        Wallet firstWallet = wallets.lockById(first);
+        Wallet secondWallet = wallets.lockById(second);
+        if (firstWallet == null || secondWallet == null) throw new NotFoundException("wallet not found");
+
         boolean inserted = transfers.insertIfAbsent(key, from, to, amount);
         if (!inserted) {
             Transfer existing = transfers.findByKey(key);
@@ -50,12 +62,6 @@ public class TransferService {
         created.increment();
         log.info("transfer.created transfer_id={} idempotency_key={} from={} to={} amount_paise={}",
                 createdTransfer.id(), key, from, to, amount);
-
-        UUID first = from.compareTo(to) < 0 ? from : to;
-        UUID second = first.equals(from) ? to : from;
-        Wallet firstWallet = wallets.lockById(first);
-        Wallet secondWallet = wallets.lockById(second);
-        if (firstWallet == null || secondWallet == null) throw new NotFoundException("wallet not found");
 
         if (wallets.debitIfSufficient(from, amount) != 1) {
             transfers.decline(createdTransfer.id());
