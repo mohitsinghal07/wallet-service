@@ -72,6 +72,4 @@ public class TransferService {
 
     public Transfer get(UUID id) { return transfers.findById(id); }
     public record Result(Transfer transfer, boolean replay) {}
-    public static class IdempotencyConflictException extends RuntimeException {}
-    public static class NotFoundException extends RuntimeException { public NotFoundException(String m){super(m);} }
 }

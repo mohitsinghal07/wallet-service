@@ -7,6 +7,7 @@ import java.util.UUID;
 public final class ApiModels {
     private ApiModels() {}
     public record WalletResponse(UUID id, String user_id, long balance_paise) {}
+    public record DepositRequest(@Min(1) long amount_paise, @NotBlank String idempotency_key) {}
     public record TransferRequest(@NotBlank String from, @NotBlank String to, @Min(1) long amount_paise,
                                    @NotBlank String idempotency_key) {}
     public record TransferResponse(UUID id, String from, String to, long amount_paise,
